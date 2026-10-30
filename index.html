@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>InvestCode</title>
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- 1. Ecrã inicial com logotipo e nome -->
+<section id="splash" aria-label="InvestCode">
+  <img class="splash-logo" src="logo.svg" alt="Logotipo InvestCode">
+  <h1 class="splash-name">InvestCode</h1>
+  <p class="splash-tag">Os teus investimentos, num só lugar</p>
+</section>
+
+<!-- 2. Login e criação de conta -->
+<section id="auth" hidden></section>
+
+<!-- 3. Sistema (só aparece depois do login) -->
+<div id="shell" hidden>
+  <main id="app"></main>
+  <nav>
+    <button data-v="home" onclick="nav('home')"><span>📊</span>Resumo</button>
+    <button data-v="list" onclick="nav('list')"><span>📒</span>Investimentos</button>
+    <button data-v="form" onclick="nav('form')"><span>➕</span>Novo</button>
+  </nav>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
