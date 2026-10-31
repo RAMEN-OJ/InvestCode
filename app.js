@@ -108,7 +108,7 @@ return l.map(i=>{const s=st(i),cl=s==='Vencido'?'bad':s==='Resgatado'?'m':'ok';
 return '<div class="item"><div class="top"><b>'+esc(i.inst)+'</b><span class="val">'+fmt(i.valor,i.moeda)+'</span></div>'+
 '<div class="m">'+esc(i.mod)+(i.fin?' para '+esc(i.fin):'')+'</div>'+
 '<div class="m">De '+fd(i.ini)+' até '+fd(i.fim)+'</div>'+
-'<div><span class="tag '+cl+'">'+s+'</span>'+(s==='Ativo'&&i.fim&&left(i)<=30?' <span class="warn tag">'+when(i)+'</span>':'')+(i.esp>0?' <span class="m">Esperado: '+fmt(i.esp,i.moeda)+'</span>':'')+(i.rec>0?' <span class="m">Recebido: '+fmt(i.rec,i.moeda)+'</span>':'')+'</div>'+
+'<div><span class="tag '+cl+'">'+s+'</span>'+(s==='Ativo'&&i.fim&&left(i)<=30?' <span class="warn tag">'+when(i)+'</span>':'')+(i.esp>0?' <span class="m">Esperado: '+fmt(i.esp,i.moeda)+(i.pct!=null?' (+'+i.pct+'%)':'')+'</span>':'')+(i.rec>0?' <span class="m">Recebido: '+fmt(i.rec,i.moeda)+'</span>':'')+'</div>'+
 (i.nota?'<div class="m">“'+esc(i.nota)+'”</div>':'')+
 '<div class="btns"><button class="btn ghost sm" onclick="edit('+i.id+')">Editar</button><button class="btn ghost sm" onclick="del('+i.id+')">'+(delId===i.id?'Confirmar apagar':'Apagar')+'</button></div></div>'}).join('')}
 const items=()=>{$('#items').innerHTML=itemsHtml()};
@@ -116,30 +116,41 @@ function list(){return '<h1>Investimentos</h1><input id="q" type="search" placeh
 function edit(id){editId=id;view='form';render();window.scrollTo(0,0)}
 function del(id){if(delId===id){data=data.filter(i=>i.id!==id);delId=null;persist()}else delId=id;render()}
 
+const expected=(v,p)=>Math.round(v*(1+p/100)*100)/100;
+function calcHtml(v,p,c){
+v=parseFloat(v);p=parseFloat(p);
+if(!(v>0)||isNaN(p)||p<0)return '<span class="m">Indica o valor investido e a percentagem para ver o valor esperado.</span>';
+const t=expected(v,p),g=Math.round((t-v)*100)/100;
+return '<div class="row"><span class="m">Retorno ('+p+'% de '+fmt(v,c)+')</span><span class="ok">+'+fmt(g,c)+'</span></div><div class="row"><b>Valor esperado</b><span class="val">'+fmt(t,c)+'</span></div>'}
+function updCalc(){const e=$('#f_calc');if(e)e.innerHTML=calcHtml($('#f_valor').value,$('#f_pct').value,$('#f_moeda').value)}
+
 function form(){
 const i=data.find(x=>x.id===editId)||{moeda:'AOA',estado:'Ativo',ini:today()};
 const ins=[...new Set(data.map(x=>x.inst))],mods=[...new Set(['Depósito a prazo','Ações','Títulos do Tesouro','Fundo de investimento','Poupança','Cripto'].concat(data.map(x=>x.mod)))];
 const v=(k)=>esc(i[k]==null?'':i[k]);
+const pct=i.pct!=null?i.pct:(i.valor>0&&i.esp>0?Math.round((i.esp/i.valor-1)*10000)/100:'');
 return '<h1>'+(editId?'Editar investimento':'Novo investimento')+'</h1>'+
 '<label>Banco, corretora ou bolsa</label><input id="f_inst" list="dl_i" value="'+v('inst')+'" placeholder="Ex.: BAI, BODIVA, Trade Republic"><datalist id="dl_i">'+ins.map(x=>'<option value="'+esc(x)+'">').join('')+'</datalist>'+
-'<div class="two"><div><label>Valor investido</label><input id="f_valor" type="number" inputmode="decimal" min="0" value="'+v('valor')+'"></div><div><label>Moeda</label><select id="f_moeda"><option value="AOA"'+(i.moeda==='AOA'?' selected':'')+'>Kwanza</option><option value="USD"'+(i.moeda==='USD'?' selected':'')+'>Dólar</option></select></div>'+
+'<div class="two"><div><label>Valor investido</label><input id="f_valor" type="number" inputmode="decimal" min="0" value="'+v('valor')+'" oninput="updCalc()"></div><div><label>Moeda</label><select id="f_moeda" onchange="updCalc()"><option value="AOA"'+(i.moeda==='AOA'?' selected':'')+'>Kwanza</option><option value="USD"'+(i.moeda==='USD'?' selected':'')+'>Dólar</option></select></div>'+
 '<div><label>Data de início</label><input id="f_ini" type="date" value="'+v('ini')+'"></div><div><label>Data de fim</label><input id="f_fim" type="date" value="'+v('fim')+'"></div></div>'+
 '<label>Modalidade</label><input id="f_mod" list="dl_m" value="'+v('mod')+'"><datalist id="dl_m">'+mods.map(x=>'<option value="'+esc(x)+'">').join('')+'</datalist>'+
 '<label>Finalidade</label><input id="f_fin" value="'+v('fin')+'" placeholder="Ex.: propinas, carro, reserva de emergência">'+
-'<div class="two"><div><label>Valor esperado no fim</label><input id="f_esp" type="number" inputmode="decimal" min="0" value="'+v('esp')+'"></div><div><label>Valor recebido</label><input id="f_rec" type="number" inputmode="decimal" min="0" value="'+v('rec')+'"></div></div>'+
+'<div class="two"><div><label>Percentagem de retorno (%)</label><input id="f_pct" type="number" inputmode="decimal" min="0" step="any" value="'+esc(pct)+'" placeholder="Ex.: 12" oninput="updCalc()"></div><div><label>Valor recebido</label><input id="f_rec" type="number" inputmode="decimal" min="0" value="'+v('rec')+'"></div></div>'+
+'<div class="calc" id="f_calc" aria-live="polite">'+calcHtml(i.valor,pct,i.moeda)+'</div>'+
 '<label>Estado</label><select id="f_estado"><option'+(i.estado==='Ativo'?' selected':'')+'>Ativo</option><option'+(i.estado==='Resgatado'?' selected':'')+'>Resgatado</option></select>'+
 '<label>Notas</label><textarea id="f_nota">'+v('nota')+'</textarea><p class="err" id="err"></p>'+
 '<div class="btns"><button class="btn" onclick="submitF()">Guardar investimento</button><button class="btn ghost" onclick="nav(\'list\')">Cancelar</button></div>'}
 function submitF(){
-const g=k=>$('#f_'+k).value.trim(),o={inst:g('inst'),valor:parseFloat(g('valor')),moeda:g('moeda'),ini:g('ini'),fim:g('fim'),mod:g('mod'),fin:g('fin'),esp:parseFloat(g('esp'))||0,rec:parseFloat(g('rec'))||0,estado:g('estado'),nota:g('nota')};
-const e=!o.inst?'Indica o banco, corretora ou bolsa.':!(o.valor>0)?'Indica um valor investido maior que zero.':!o.ini?'Indica a data de início.':!o.fim?'Indica a data de fim.':o.fim<o.ini?'A data de fim não pode ser antes da data de início.':!o.mod?'Indica a modalidade.':'';
+const g=k=>$('#f_'+k).value.trim(),o={inst:g('inst'),valor:parseFloat(g('valor')),moeda:g('moeda'),ini:g('ini'),fim:g('fim'),mod:g('mod'),fin:g('fin'),pct:parseFloat(g('pct')),esp:0,rec:parseFloat(g('rec'))||0,estado:g('estado'),nota:g('nota')};
+const e=!o.inst?'Indica o banco, corretora ou bolsa.':!(o.valor>0)?'Indica um valor investido maior que zero.':isNaN(o.pct)||o.pct<0?'Indica a percentagem de retorno (0 ou mais).':!o.ini?'Indica a data de início.':!o.fim?'Indica a data de fim.':o.fim<o.ini?'A data de fim não pode ser antes da data de início.':!o.mod?'Indica a modalidade.':'';
 if(e){$('#err').textContent=e;return}
+o.esp=expected(o.valor,o.pct);
 if(editId){const x=data.find(i=>i.id===editId);Object.assign(x,o)}else{o.id=Date.now();data.push(o)}
 persist();editId=null;view='list';render();window.scrollTo(0,0)}
 function demo(){const d=n=>{const x=new Date();x.setDate(x.getDate()+n);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0')};
 data=data.concat([
-{id:1,inst:'BAI',valor:500000,moeda:'AOA',ini:d(-150),fim:d(12),mod:'Depósito a prazo',fin:'Propinas',esp:560000,rec:0,estado:'Ativo',nota:'Renovar se a taxa subir'},
-{id:2,inst:'BODIVA',valor:300000,moeda:'AOA',ini:d(-60),fim:d(200),mod:'Títulos do Tesouro',fin:'Reserva de emergência',esp:345000,rec:0,estado:'Ativo',nota:''},
+{id:1,inst:'BAI',valor:500000,moeda:'AOA',ini:d(-150),fim:d(12),mod:'Depósito a prazo',fin:'Propinas',pct:12,esp:560000,rec:0,estado:'Ativo',nota:'Renovar se a taxa subir'},
+{id:2,inst:'BODIVA',valor:300000,moeda:'AOA',ini:d(-60),fim:d(200),mod:'Títulos do Tesouro',fin:'Reserva de emergência',pct:15,esp:345000,rec:0,estado:'Ativo',nota:''},
 {id:3,inst:'Trade Republic',valor:400,moeda:'USD',ini:d(-90),fim:d(300),mod:'Ações',fin:'Carro',esp:0,rec:0,estado:'Ativo',nota:''},
 {id:4,inst:'BFA',valor:200000,moeda:'AOA',ini:d(-300),fim:d(-5),mod:'Poupança',fin:'Telemóvel novo',esp:0,rec:0,estado:'Ativo',nota:''},
 {id:5,inst:'BAI',valor:100000,moeda:'AOA',ini:d(-400),fim:d(-40),mod:'Depósito a prazo',fin:'Viagem',esp:0,rec:112000,estado:'Resgatado',nota:''}]);

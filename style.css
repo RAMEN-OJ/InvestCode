@@ -60,6 +60,8 @@ textarea{min-height:80px;resize:vertical}
 .btn.ghost{background:transparent;color:var(--ac);border:1px solid var(--ln)}
 .btn.sm{padding:8px 12px;font-size:14px}
 .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.calc{background:var(--sf);border:1px solid var(--ln);border-radius:12px;padding:10px 14px;margin:0 0 12px}
+.calc .row{padding:4px 0}
 .err{color:var(--bad);margin:0 0 10px;min-height:1em}
 
 /* ===== Lista de investimentos ===== */
